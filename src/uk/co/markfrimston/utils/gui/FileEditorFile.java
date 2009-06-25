@@ -32,4 +32,12 @@ public abstract class FileEditorFile
 	{
 		return unsavedChanges;
 	}
+	public void setFile(File file)
+	{
+		this.file = file;
+	}
+	public void setUnsavedChanges(boolean val)
+	{
+		this.unsavedChanges = val;
+	}
 }
