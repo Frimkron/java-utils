@@ -26,6 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 package uk.co.markfrimston.utils;
 
 import java.util.*;
+import java.util.regex.*;
 
 public class RegexUtils 
 {
@@ -43,6 +44,41 @@ public class RegexUtils
 			result2.add(SequenceUtils.toString(seq));
 		}
 		return "("+StringUtils.implode(result2, "|")+")";
+	}
+	
+	/*
+	 * Return group 1 of the regex match against subject, or null if no match
+	 */
+	public static String group(String regex, String subject)
+	{
+		Matcher m = Pattern.compile(regex).matcher(subject);
+		if(m.matches()){
+			return m.group(1);
+		}
+		else{
+			return null;
+		}
+	}
+	
+	/*
+	 * Return groups 1+ of the regex match against subject, or null if no match
+	 */
+	public static String[] groups(String regex, String subject)
+	{
+		Matcher m = Pattern.compile(regex).matcher(subject);
+		if(m.matches())
+		{
+			String[] out = new String[m.groupCount()];
+			for(int i=0; i<out.length; i++)
+			{
+				out[i] = m.group(i+1);
+			}
+			return out;
+		}
+		else
+		{
+			return null;
+		}
 	}
 	
 	public static void main(String[] args)

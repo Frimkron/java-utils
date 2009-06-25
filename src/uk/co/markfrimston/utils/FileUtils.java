@@ -27,6 +27,7 @@ package uk.co.markfrimston.utils;
 
 import java.io.*;
 import java.util.*;
+import java.net.*;
 
 public class FileUtils 
 {
@@ -150,5 +151,15 @@ public class FileUtils
 		return sb.toString();
 	}
 	
+	public static URL fileToUrl(File file)
+		throws MalformedURLException, IOException
+	{
+		return new URL("file:///"+file.getCanonicalPath().replaceAll("\\\\","/"));
+	}
 	
+	public static String fileToUrl(String file)
+		throws MalformedURLException, IOException
+	{
+		return fileToUrl(new File(file)).toString();
+	}
 }

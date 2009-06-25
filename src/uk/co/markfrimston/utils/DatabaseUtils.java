@@ -330,4 +330,16 @@ public class DatabaseUtils
 		
 		return stmt;
 	}
+	
+	/*
+	 * Connect to a MySQL database
+	 */
+	public static Connection mysqlConnect(String host, int port, String database, 
+			String username, String password)
+		throws SQLException, ClassNotFoundException
+	{
+		Class.forName("com.mysql.jdbc.Driver");
+		return DriverManager.getConnection("jdbc:mysql://"+host+":"+port+"/"
+				+database, username, password);
+	}
 }
