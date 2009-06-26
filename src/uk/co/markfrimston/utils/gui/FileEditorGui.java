@@ -3,14 +3,26 @@ package uk.co.markfrimston.utils.gui;
 import javax.swing.*;
 import javax.swing.event.*;
 
+import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 import java.io.*;
 
-public abstract class FileEditorGui extends JFrame implements InternalFrameListener
+// TODO update internal frame titles when save as changes filename
+// TODO disable close, save, save as etc when no file open
+// TODO implement undo, redo
+// TODO implement cut, copy, paste
+// TODO maximise files when created
+// TODO window menu
+// TODO file filters
+// TODO recording unsaved changes
+
+public abstract class FileEditorGui extends JFrame 
+	implements InternalFrameListener, WindowListener
 {
 	protected JDesktopPane desktopPane;
-	protected Map<JInternalFrame,FileEditorFile> files = new HashMap<JInternalFrame,FileEditorFile>(); 
+	protected Map<JInternalFrame,FileEditorFile> files = new HashMap<JInternalFrame,FileEditorFile>();
+	protected File currentDirectory;
 	
 	protected JMenuItem miFileNew;
 	protected JMenuItem miFileOpen;
@@ -33,6 +45,11 @@ public abstract class FileEditorGui extends JFrame implements InternalFrameListe
 		JMenuBar menuBar = new JMenuBar();
 		setupMenu(menuBar);
 		this.setJMenuBar(menuBar);
+		
+		this.setSize(new Dimension(640,480));
+		this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		this.addWindowListener(this);
+		this.setVisible(true);
 	}
 	
 	protected void setupMenu(JMenuBar menuBar)
@@ -47,6 +64,12 @@ public abstract class FileEditorGui extends JFrame implements InternalFrameListe
 		});
 		mFile.add(miFileNew);
 		miFileOpen = new JMenuItem("Open");
+		miFileOpen.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e)
+			{
+				openFileDialog();
+			}
+		});
 		mFile.add(miFileOpen);
 		miFileClose = new JMenuItem("Close");
 		miFileClose.addActionListener(new ActionListener(){
@@ -83,7 +106,14 @@ public abstract class FileEditorGui extends JFrame implements InternalFrameListe
 		});
 		mFile.add(miFileSaveAs);
 		miFileExit = new JMenuItem("Exit");
+		miFileExit.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e)
+			{
+				saveAllAndExitIfConfirmed();
+			}
+		});
 		mFile.add(miFileExit);
+		menuBar.add(mFile);
 		
 		JMenu mEdit = new JMenu("Edit");
 		miEditUndo = new JMenuItem("Undo");
@@ -97,6 +127,7 @@ public abstract class FileEditorGui extends JFrame implements InternalFrameListe
 		mEdit.add(miEditCopy);
 		miEditPaste = new JMenuItem("Paste");
 		mEdit.add(miEditPaste);
+		menuBar.add(mEdit);
 	}
 	
 	protected abstract FileEditorFile createNewFile() throws FileEditorFileException;
@@ -116,45 +147,94 @@ public abstract class FileEditorGui extends JFrame implements InternalFrameListe
 		try
 		{
 			FileEditorFile f = createNewFile();
-			this.files.put(f.getFrame(), f);
-			this.desktopPane.add(f.getFrame());
-			f.getFrame().setTitle(f.getFile().getName());
-			f.getFrame().setDefaultCloseOperation(JInternalFrame.DO_NOTHING_ON_CLOSE);
-			f.getFrame().addInternalFrameListener(this);
-			f.getFrame().setVisible(true);
+			setupFileGui(f);
 		}
 		catch(FileEditorFileException e)
 		{
 			showError("Failed to create new file: "+e.getMessage());
 		}
 	}
+	
+	protected void setupFileGui(FileEditorFile f)
+	{
+		this.files.put(f.getFrame(), f);
+		this.desktopPane.add(f.getFrame());
+		f.getFrame().setTitle(f.getFile().getName());
+		f.getFrame().setDefaultCloseOperation(JInternalFrame.DO_NOTHING_ON_CLOSE);
+		f.getFrame().addInternalFrameListener(this);
+		f.getFrame().setVisible(true);
+	}
 
-	protected void saveAndCloseIfConfirmed(JInternalFrame frame)
+	protected void saveAllAndExitIfConfirmed()
+	{
+		boolean doExit = true;
+		Set<JInternalFrame> keys = new HashSet<JInternalFrame>();
+		keys.addAll(files.keySet());
+		for(JInternalFrame frame : keys)
+		{
+			if(!saveAndCloseIfConfirmed(frame))
+			{
+				doExit = false;
+				break;
+			}
+		}
+		if(doExit)
+		{
+			exit();
+		}
+	}
+	
+	protected void exit()
+	{
+		this.setVisible(false);
+		this.dispose();
+		System.exit(0);
+	}
+	
+	protected boolean saveAndCloseIfConfirmed(JInternalFrame frame)
 	{
 		FileEditorFile file = files.get(frame);
-		if(file.hasUnsavedChanges())
-		{	
-			int resp = JOptionPane.showConfirmDialog(this, 
-					"Save changes to "+file.getFile().getName()+"?","Save Changes",
-					JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
-			if(resp != JOptionPane.CANCEL_OPTION)
-			{
-				if(resp == JOptionPane.YES_OPTION)
+		if(file!=null)
+		{
+			if(file.hasUnsavedChanges())
+			{	
+				int resp = JOptionPane.showConfirmDialog(this, 
+						"Save changes to "+file.getFile().getName()+"?","Save Changes",
+						JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+				if(resp != JOptionPane.CANCEL_OPTION)
 				{
-					if(saveOrSaveAsFile(file))
+					if(resp == JOptionPane.YES_OPTION)
 					{
+						if(saveOrSaveAsFile(file))
+						{
+							closeFile(file);
+							return true;
+						}				
+						else
+						{
+							return false;
+						}
+					}
+					else
+					{					
 						closeFile(file);
-					}						
+						return true;
+					}
 				}
 				else
 				{
-					closeFile(file);
+					return false;
 				}
+			}
+			else
+			{
+				closeFile(file);
+				return true;
 			}
 		}
 		else
 		{
-			closeFile(file);
+			return true;
 		}
 	}
 	
@@ -176,6 +256,7 @@ public abstract class FileEditorGui extends JFrame implements InternalFrameListe
 		{
 			try{
 				saveFile(file);
+				file.setUnsavedChanges(false);
 				return true;
 			}
 			catch(FileEditorFileException e)
@@ -192,14 +273,53 @@ public abstract class FileEditorGui extends JFrame implements InternalFrameListe
 		jfc.setSelectedFile(file.getFile());
 		if(jfc.showSaveDialog(this)==JFileChooser.APPROVE_OPTION)
 		{
+			File selected = jfc.getSelectedFile();
+			currentDirectory = selected.getParentFile();
+			if(selected.exists())
+			{
+				if(JOptionPane.showConfirmDialog(this, "This file already exists. Overwrite?","Overwrite",
+						JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE)!=JOptionPane.OK_OPTION)
+				{
+					return false;
+				}
+			}
 			file.setFile(jfc.getSelectedFile());
 			try{
 				saveFile(file);
+				file.setUnsavedChanges(false);
 				return true;
 			}
 			catch(FileEditorFileException e)
 			{
 				showError("Failed to save file: "+e.getMessage());
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
+	}
+	
+	protected boolean openFileDialog()
+	{
+		JFileChooser jfc = new JFileChooser();
+		if(currentDirectory!=null){
+			jfc.setCurrentDirectory(currentDirectory);
+		}
+		if(jfc.showOpenDialog(this)==JFileChooser.APPROVE_OPTION)
+		{
+			File selected = jfc.getSelectedFile();
+			currentDirectory = selected.getParentFile();
+			try
+			{
+				FileEditorFile f = loadFile(selected);
+				setupFileGui(f);
+				return true;
+			}
+			catch(FileEditorFileException e)
+			{
+				showError("Failed to open file: "+e.getMessage());
 				return false;
 			}
 		}
@@ -218,12 +338,12 @@ public abstract class FileEditorGui extends JFrame implements InternalFrameListe
 	{}
 
 	public void internalFrameClosed(InternalFrameEvent e)
+	{}
+
+	public void internalFrameClosing(InternalFrameEvent e)
 	{
 		saveAndCloseIfConfirmed(e.getInternalFrame());
 	}
-
-	public void internalFrameClosing(InternalFrameEvent e)
-	{}
 
 	public void internalFrameDeactivated(InternalFrameEvent e)
 	{}
@@ -235,5 +355,28 @@ public abstract class FileEditorGui extends JFrame implements InternalFrameListe
 	{}
 
 	public void internalFrameOpened(InternalFrameEvent e)
+	{}
+
+	public void windowActivated(WindowEvent arg0) 
+	{}
+
+	public void windowClosed(WindowEvent arg0) 
+	{}
+
+	public void windowClosing(WindowEvent arg0) 
+	{
+		saveAllAndExitIfConfirmed();
+	}
+
+	public void windowDeactivated(WindowEvent arg0) 
+	{}
+
+	public void windowDeiconified(WindowEvent arg0) 
+	{}
+
+	public void windowIconified(WindowEvent arg0) 
+	{}
+
+	public void windowOpened(WindowEvent arg0) 
 	{}
 }

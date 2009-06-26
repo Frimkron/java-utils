@@ -10,10 +10,11 @@ public abstract class FileEditorFile
 	protected UndoStack undoHistory;
 	protected boolean unsavedChanges;
 	
-	public FileEditorFile(File file, JInternalFrame frame)
+	public FileEditorFile(File file, JInternalFrame frame, boolean unsavedChanges)
 	{
 		this.file = file;
 		this.frame = frame;
+		this.unsavedChanges = unsavedChanges;
 	}
 	
 	public File getFile()

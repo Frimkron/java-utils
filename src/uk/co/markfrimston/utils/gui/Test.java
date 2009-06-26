@@ -2,7 +2,7 @@ package uk.co.markfrimston.utils.gui;
 
 import java.awt.*;
 import java.io.*;
-import javax.swing.JInternalFrame;
+import javax.swing.*;
 import java.beans.*;
 
 public class Test extends FileEditorGui 
@@ -57,7 +57,8 @@ public class Test extends FileEditorGui
 		int i = 1;
 		do
 		{
-			file = new File("Newfile-"+i+".tst");
+			file = new File(currentDirectory!=null?currentDirectory:new File("."),
+					"Newfile-"+i+".tst");
 			i++;
 		}
 		while(file.exists());
@@ -79,6 +80,10 @@ public class Test extends FileEditorGui
 			frame.file = f;
 			r.close();
 			return f;
+		}
+		catch(NumberFormatException e)
+		{
+			throw new FileEditorFileException(e);
 		}
 		catch(IOException e)
 		{
@@ -105,6 +110,13 @@ public class Test extends FileEditorGui
 	
 	public static void main(String[] args)
 	{
+		/*try 
+		{
+	        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+	    } 
+	    catch(Exception e) 
+	    {}*/
+
 		Test t = new Test();
 	}
 
