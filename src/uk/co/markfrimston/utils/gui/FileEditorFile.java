@@ -15,6 +15,8 @@ public abstract class FileEditorFile
 		this.file = file;
 		this.frame = frame;
 		this.unsavedChanges = unsavedChanges;
+		this.undoHistory = new UndoStack();
+		updateFrameSettings();
 	}
 	
 	public File getFile()
@@ -36,9 +38,28 @@ public abstract class FileEditorFile
 	public void setFile(File file)
 	{
 		this.file = file;
+		updateFrameSettings();		
 	}
 	public void setUnsavedChanges(boolean val)
 	{
 		this.unsavedChanges = val;
+	}
+	
+	protected void updateFrameSettings()
+	{
+		if(this.frame!=null && this.file!=null)
+		{
+			this.frame.setTitle(this.file.getName());
+		}
+	}
+	
+	public boolean undoAvailable()
+	{
+		return undoHistory.canUndo();
+	}
+	
+	public boolean redoAvailable()
+	{
+		return undoHistory.canRedo();
 	}
 }

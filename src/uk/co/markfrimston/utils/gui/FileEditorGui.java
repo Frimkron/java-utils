@@ -8,10 +8,7 @@ import java.awt.event.*;
 import java.util.*;
 import java.io.*;
 
-// TODO update internal frame titles when save as changes filename
-// TODO disable close, save, save as etc when no file open
 // TODO implement undo, redo
-// TODO implement cut, copy, paste
 // TODO maximise files when created
 // TODO window menu
 // TODO file filters
@@ -24,6 +21,7 @@ public abstract class FileEditorGui extends JFrame
 	protected Map<JInternalFrame,FileEditorFile> files = new HashMap<JInternalFrame,FileEditorFile>();
 	protected File currentDirectory;
 	
+	protected JMenu miFile;
 	protected JMenuItem miFileNew;
 	protected JMenuItem miFileOpen;
 	protected JMenuItem miFileClose;
@@ -31,11 +29,15 @@ public abstract class FileEditorGui extends JFrame
 	protected JMenuItem miFileSaveAs;
 	protected JMenuItem miFileExit;
 	
+	protected JMenu miEdit;
 	protected JMenuItem miEditUndo;
 	protected JMenuItem miEditRedo;
-	protected JMenuItem miEditCut;
-	protected JMenuItem miEditCopy;
-	protected JMenuItem miEditPaste;
+	
+	protected JMenu miWindow;
+	protected JMenuItem miWindowCascade;
+	protected JMenuItem miWindowTileHoriz;
+	protected JMenuItem miWindowTileVert;
+	protected JMenuItem miWindowArrange;
 	
 	public FileEditorGui()
 	{
@@ -46,7 +48,9 @@ public abstract class FileEditorGui extends JFrame
 		setupMenu(menuBar);
 		this.setJMenuBar(menuBar);
 		
-		this.setSize(new Dimension(640,480));
+		setOpenFileOptionsEnabled(false);
+		
+		this.setSize(new Dimension(320,200));
 		this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		this.addWindowListener(this);
 		this.setVisible(true);
@@ -54,7 +58,7 @@ public abstract class FileEditorGui extends JFrame
 	
 	protected void setupMenu(JMenuBar menuBar)
 	{
-		JMenu mFile = new JMenu("File");
+		miFile = new JMenu("File");
 		miFileNew = new JMenuItem("New");
 		miFileNew.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
@@ -62,7 +66,7 @@ public abstract class FileEditorGui extends JFrame
 				createNewFileAndSetupGui();
 			}
 		});
-		mFile.add(miFileNew);
+		miFile.add(miFileNew);
 		miFileOpen = new JMenuItem("Open");
 		miFileOpen.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
@@ -70,7 +74,7 @@ public abstract class FileEditorGui extends JFrame
 				openFileDialog();
 			}
 		});
-		mFile.add(miFileOpen);
+		miFile.add(miFileOpen);
 		miFileClose = new JMenuItem("Close");
 		miFileClose.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
@@ -81,8 +85,8 @@ public abstract class FileEditorGui extends JFrame
 				}
 			}
 		});
-		mFile.add(miFileClose);
-		mFile.add(new JSeparator());
+		miFile.add(miFileClose);
+		miFile.add(new JSeparator());
 		miFileSave = new JMenuItem("Save");
 		miFileSave.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
@@ -93,7 +97,7 @@ public abstract class FileEditorGui extends JFrame
 				}
 			}
 		});
-		mFile.add(miFileSave);
+		miFile.add(miFileSave);
 		miFileSaveAs = new JMenuItem("Save As");
 		miFileSaveAs.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
@@ -104,7 +108,7 @@ public abstract class FileEditorGui extends JFrame
 				}
 			}
 		});
-		mFile.add(miFileSaveAs);
+		miFile.add(miFileSaveAs);
 		miFileExit = new JMenuItem("Exit");
 		miFileExit.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
@@ -112,22 +116,32 @@ public abstract class FileEditorGui extends JFrame
 				saveAllAndExitIfConfirmed();
 			}
 		});
-		mFile.add(miFileExit);
-		menuBar.add(mFile);
+		miFile.add(miFileExit);
+		menuBar.add(miFile);
 		
-		JMenu mEdit = new JMenu("Edit");
+		miEdit = new JMenu("Edit");
 		miEditUndo = new JMenuItem("Undo");
-		mEdit.add(miEditUndo);
+		miEdit.add(miEditUndo);
 		miEditRedo = new JMenuItem("Redo");
-		mEdit.add(miEditRedo);
-		mEdit.add(new JSeparator());
-		miEditCut = new JMenuItem("Cut");
-		mEdit.add(miEditCut);
-		miEditCopy = new JMenuItem("Copy");
-		mEdit.add(miEditCopy);
-		miEditPaste = new JMenuItem("Paste");
-		mEdit.add(miEditPaste);
-		menuBar.add(mEdit);
+		miEdit.add(miEditRedo);
+		menuBar.add(miEdit);
+		
+		miWindow = new JMenu("Window");
+		miWindowCascade = new JMenuItem("Cascade");
+		miWindowCascade.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e)
+			{
+				cascadeWindows();
+			}
+		});
+		miWindow.add(miWindowCascade);
+		miWindowTileHoriz = new JMenuItem("Tile Horizontally");
+		miWindow.add(miWindowTileHoriz);
+		miWindowTileVert = new JMenuItem("Tile Vertically");
+		miWindow.add(miWindowTileVert);
+		miWindowArrange = new JMenuItem("Arrange");
+		miWindow.add(miWindowArrange);
+		menuBar.add(miWindow);
 	}
 	
 	protected abstract FileEditorFile createNewFile() throws FileEditorFileException;
@@ -148,6 +162,7 @@ public abstract class FileEditorGui extends JFrame
 		{
 			FileEditorFile f = createNewFile();
 			setupFileGui(f);
+			setOpenFileOptionsEnabled(true);
 		}
 		catch(FileEditorFileException e)
 		{
@@ -159,7 +174,6 @@ public abstract class FileEditorGui extends JFrame
 	{
 		this.files.put(f.getFrame(), f);
 		this.desktopPane.add(f.getFrame());
-		f.getFrame().setTitle(f.getFile().getName());
 		f.getFrame().setDefaultCloseOperation(JInternalFrame.DO_NOTHING_ON_CLOSE);
 		f.getFrame().addInternalFrameListener(this);
 		f.getFrame().setVisible(true);
@@ -244,6 +258,7 @@ public abstract class FileEditorGui extends JFrame
 		files.remove(frame);
 		frame.setVisible(false);
 		frame.dispose();
+		disableOptionsIfNothingOpen();
 	}
 	
 	protected boolean saveOrSaveAsFile(FileEditorFile file)
@@ -315,6 +330,7 @@ public abstract class FileEditorGui extends JFrame
 			{
 				FileEditorFile f = loadFile(selected);
 				setupFileGui(f);
+				setOpenFileOptionsEnabled(true);
 				return true;
 			}
 			catch(FileEditorFileException e)
@@ -335,7 +351,10 @@ public abstract class FileEditorGui extends JFrame
 	}
 	
 	public void internalFrameActivated(InternalFrameEvent e)
-	{}
+	{
+		enableUndoForAvailability();
+		enableRedoForAvailability();
+	}
 
 	public void internalFrameClosed(InternalFrameEvent e)
 	{}
@@ -379,4 +398,48 @@ public abstract class FileEditorGui extends JFrame
 
 	public void windowOpened(WindowEvent arg0) 
 	{}
+	
+	protected void disableOptionsIfNothingOpen()
+	{
+		if(this.files.isEmpty())
+		{
+			setOpenFileOptionsEnabled(false);
+		}
+	}
+	
+	protected void setOpenFileOptionsEnabled(boolean enabled)
+	{
+		miFileClose.setEnabled(enabled);
+		miFileSave.setEnabled(enabled);
+		miFileSaveAs.setEnabled(enabled);
+		miEdit.setEnabled(enabled);
+		if(enabled){
+			enableUndoForAvailability();
+			enableRedoForAvailability();
+		}
+		miWindow.setEnabled(enabled);
+	}
+	
+	protected void enableUndoForAvailability()
+	{
+		FileEditorFile f = currentlySelectedFile();
+		if(f!=null)
+		{
+			miEditUndo.setEnabled(f.undoAvailable());
+		}
+	}
+	
+	protected void enableRedoForAvailability()
+	{
+		FileEditorFile f = currentlySelectedFile();
+		if(f!=null)
+		{
+			miEditRedo.setEnabled(f.redoAvailable());
+		}
+	}
+	
+	protected void cascadeWindows()
+	{
+		// TODO
+	}
 }
