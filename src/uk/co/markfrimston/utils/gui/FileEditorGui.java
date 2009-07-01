@@ -3,6 +3,7 @@ package uk.co.markfrimston.utils.gui;
 import javax.swing.*;
 import javax.swing.event.*;
 
+import java.awt.geom.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
@@ -25,6 +26,7 @@ public abstract class FileEditorGui extends JFrame
 	protected JMenuItem miFileNew;
 	protected JMenuItem miFileOpen;
 	protected JMenuItem miFileClose;
+	protected JMenuItem miFileCloseAll;
 	protected JMenuItem miFileSave;
 	protected JMenuItem miFileSaveAs;
 	protected JMenuItem miFileExit;
@@ -86,6 +88,14 @@ public abstract class FileEditorGui extends JFrame
 			}
 		});
 		miFile.add(miFileClose);
+		miFileCloseAll = new JMenuItem("Close All");
+		miFileCloseAll.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e)
+			{
+				saveAndCloseAllIfConfirmed();
+			}
+		});
+		miFile.add(miFileCloseAll);
 		miFile.add(new JSeparator());
 		miFileSave = new JMenuItem("Save");
 		miFileSave.addActionListener(new ActionListener(){
@@ -179,20 +189,25 @@ public abstract class FileEditorGui extends JFrame
 		f.getFrame().setVisible(true);
 	}
 
-	protected void saveAllAndExitIfConfirmed()
+	protected boolean saveAndCloseAllIfConfirmed()
 	{
-		boolean doExit = true;
+		boolean done = true;
 		Set<JInternalFrame> keys = new HashSet<JInternalFrame>();
 		keys.addAll(files.keySet());
 		for(JInternalFrame frame : keys)
 		{
 			if(!saveAndCloseIfConfirmed(frame))
 			{
-				doExit = false;
+				done = false;
 				break;
 			}
 		}
-		if(doExit)
+		return done;
+	}
+	
+	protected void saveAllAndExitIfConfirmed()
+	{		
+		if(saveAndCloseAllIfConfirmed())
 		{
 			exit();
 		}
@@ -410,6 +425,7 @@ public abstract class FileEditorGui extends JFrame
 	protected void setOpenFileOptionsEnabled(boolean enabled)
 	{
 		miFileClose.setEnabled(enabled);
+		miFileCloseAll.setEnabled(enabled);
 		miFileSave.setEnabled(enabled);
 		miFileSaveAs.setEnabled(enabled);
 		miEdit.setEnabled(enabled);
@@ -440,6 +456,19 @@ public abstract class FileEditorGui extends JFrame
 	
 	protected void cascadeWindows()
 	{
-		// TODO
+		Rectangle bounds = this.desktopPane.getBounds();
+		int frameW = bounds.width / 4 * 3;
+		int frameH = bounds.height / 4 * 3;
+		int hSpace = bounds.width - frameW;
+		int vSpace = bounds.height - frameH;
+		int count = 0;
+		for(JInternalFrame frame : this.desktopPane.getAllFrames())
+		{
+			int x = (count * 16) % hSpace;
+			int y = (count * 16) % vSpace;
+			frame.setBounds(new Rectangle(x,y,frameW,frameH));
+			frame.moveToFront();
+			count ++;
+		}
 	}
 }
