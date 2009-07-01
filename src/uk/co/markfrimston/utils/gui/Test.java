@@ -4,6 +4,7 @@ import java.awt.*;
 import java.io.*;
 import javax.swing.*;
 import java.beans.*;
+import java.awt.event.*;
 
 public class Test extends FileEditorGui 
 {
@@ -11,14 +12,27 @@ public class Test extends FileEditorGui
 	{
 		protected int number;
 		
-		public TestFile(File file, JInternalFrame frame, boolean unsavedChanges, int number) 
+		public TestFile(File file, JInternalFrame frame, boolean unsavedChanges, 
+				FileEditorFileListener listener, int number) 
 		{
-			super(file, frame, unsavedChanges);
+			super(file, frame, unsavedChanges, listener);
 			this.number = number;
+		}
+		
+		public void incrementNumber()
+		{
+			number++;
+			this.frame.repaint();
+		}
+		public void decrementNumber()
+		{
+			number--;
+			this.frame.repaint();
 		}
 	}
 	
 	public static class TestFrame extends JInternalFrame
+		implements MouseListener
 	{
 		protected TestFile file;
 		
@@ -29,6 +43,7 @@ public class Test extends FileEditorGui
 			this.setClosable(true);
 			this.setIconifiable(true);			
 			this.setSize(new Dimension(200,200));
+			this.addMouseListener(this);
 		}
 		
 		public void paint(Graphics g)
@@ -39,6 +54,19 @@ public class Test extends FileEditorGui
 				g.setColor(Color.BLUE);
 				g.drawString("Number: "+String.valueOf(file.number), 50, 50);
 			}
+		}
+
+		public void mouseClicked(MouseEvent arg0) {}
+
+		public void mouseEntered(MouseEvent arg0) {}
+
+		public void mouseExited(MouseEvent arg0) {}
+
+		public void mousePressed(MouseEvent arg0) {}
+
+		public void mouseReleased(MouseEvent arg0) 
+		{
+			file.doCommand(new TestCommand(file));
 		}
 	}
 	
@@ -62,7 +90,7 @@ public class Test extends FileEditorGui
 			i++;
 		}
 		while(file.exists());
-		TestFile f = new TestFile(file,frame,true,0);
+		TestFile f = new TestFile(file,frame,true,this,0);
 		frame.file = f;
 		return f;
 	}
@@ -76,7 +104,7 @@ public class Test extends FileEditorGui
 			BufferedReader r = new BufferedReader(new FileReader(filename));
 			int num = Integer.parseInt(r.readLine());
 			TestFrame frame = new TestFrame();
-			TestFile f = new TestFile(filename,frame,false,num);
+			TestFile f = new TestFile(filename,frame,false,this,num);
 			frame.file = f;
 			r.close();
 			return f;

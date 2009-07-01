@@ -9,14 +9,17 @@ public abstract class FileEditorFile
 	protected JInternalFrame frame;
 	protected UndoStack undoHistory;
 	protected boolean unsavedChanges;
+	protected FileEditorFileListener listener;
 	
-	public FileEditorFile(File file, JInternalFrame frame, boolean unsavedChanges)
+	public FileEditorFile(File file, JInternalFrame frame, boolean unsavedChanges,
+			FileEditorFileListener listener)
 	{
 		this.file = file;
 		this.frame = frame;
 		this.unsavedChanges = unsavedChanges;
+		this.listener = listener;
 		this.undoHistory = new UndoStack();
-		updateFrameSettings();
+		fileChanged();
 	}
 	
 	public File getFile()
@@ -38,18 +41,18 @@ public abstract class FileEditorFile
 	public void setFile(File file)
 	{
 		this.file = file;
-		updateFrameSettings();		
+		fileChanged();		
 	}
 	public void setUnsavedChanges(boolean val)
 	{
 		this.unsavedChanges = val;
 	}
 	
-	protected void updateFrameSettings()
+	protected void fileChanged()
 	{
-		if(this.frame!=null && this.file!=null)
+		if(this.listener!=null)
 		{
-			this.frame.setTitle(this.file.getName());
+			this.listener.fileChanged(this);
 		}
 	}
 	
@@ -61,5 +64,37 @@ public abstract class FileEditorFile
 	public boolean redoAvailable()
 	{
 		return undoHistory.canRedo();
+	}
+	
+	public void undo()
+	{
+		if(undoAvailable())
+		{
+			undoHistory.undo();
+			undoChanged();
+		}
+	}
+	
+	public void redo()
+	{
+		if(redoAvailable())
+		{
+			undoHistory.redo();
+			undoChanged();
+		}
+	}
+	
+	public void doCommand(FileEditorCommand command)
+	{
+		command.execute();
+		undoHistory.add(command);
+		undoChanged();
+	}
+	
+	protected void undoChanged()
+	{
+		if(listener!=null){
+			listener.undoHistoryChanged(this);
+		}
 	}
 }

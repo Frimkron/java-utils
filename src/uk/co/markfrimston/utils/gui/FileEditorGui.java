@@ -2,24 +2,23 @@ package uk.co.markfrimston.utils.gui;
 
 import javax.swing.*;
 import javax.swing.event.*;
-
+import java.beans.*;
 import java.awt.geom.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 import java.io.*;
 
-// TODO implement undo, redo
 // TODO maximise files when created
-// TODO window menu
 // TODO file filters
-// TODO recording unsaved changes
+// TODO keyboard shortcuts
 
 public abstract class FileEditorGui extends JFrame 
-	implements InternalFrameListener, WindowListener
+	implements InternalFrameListener, WindowListener, FileEditorFileListener
 {
 	protected JDesktopPane desktopPane;
 	protected Map<JInternalFrame,FileEditorFile> files = new HashMap<JInternalFrame,FileEditorFile>();
+	protected Map<JInternalFrame,JMenuItem> windowMenuItems = new HashMap<JInternalFrame,JMenuItem>();
 	protected File currentDirectory;
 	
 	protected JMenu miFile;
@@ -39,7 +38,7 @@ public abstract class FileEditorGui extends JFrame
 	protected JMenuItem miWindowCascade;
 	protected JMenuItem miWindowTileHoriz;
 	protected JMenuItem miWindowTileVert;
-	protected JMenuItem miWindowArrange;
+	protected ButtonGroup windowButtonGroup;
 	
 	public FileEditorGui()
 	{
@@ -131,12 +130,31 @@ public abstract class FileEditorGui extends JFrame
 		
 		miEdit = new JMenu("Edit");
 		miEditUndo = new JMenuItem("Undo");
+		miEditUndo.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e)
+			{
+				FileEditorFile f = currentlySelectedFile();
+				if(f!=null && f.undoAvailable()){
+					f.undo();
+				}
+			}
+		});
 		miEdit.add(miEditUndo);
 		miEditRedo = new JMenuItem("Redo");
+		miEditRedo.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e)
+			{
+				FileEditorFile f = currentlySelectedFile();
+				if(f!=null && f.redoAvailable()){
+					f.redo();
+				}
+			}
+		});
 		miEdit.add(miEditRedo);
 		menuBar.add(miEdit);
 		
 		miWindow = new JMenu("Window");
+		windowButtonGroup = new ButtonGroup();
 		miWindowCascade = new JMenuItem("Cascade");
 		miWindowCascade.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
@@ -146,11 +164,22 @@ public abstract class FileEditorGui extends JFrame
 		});
 		miWindow.add(miWindowCascade);
 		miWindowTileHoriz = new JMenuItem("Tile Horizontally");
+		miWindowTileHoriz.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e)
+			{
+				tileWindowsHorizontally();
+			}
+		});
 		miWindow.add(miWindowTileHoriz);
 		miWindowTileVert = new JMenuItem("Tile Vertically");
+		miWindowTileVert.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e)
+			{
+				tileWindowsVertically();
+			}
+		});
 		miWindow.add(miWindowTileVert);
-		miWindowArrange = new JMenuItem("Arrange");
-		miWindow.add(miWindowArrange);
+		miWindow.add(new JSeparator());
 		menuBar.add(miWindow);
 	}
 	
@@ -183,10 +212,25 @@ public abstract class FileEditorGui extends JFrame
 	protected void setupFileGui(FileEditorFile f)
 	{
 		this.files.put(f.getFrame(), f);
-		this.desktopPane.add(f.getFrame());
-		f.getFrame().setDefaultCloseOperation(JInternalFrame.DO_NOTHING_ON_CLOSE);
-		f.getFrame().addInternalFrameListener(this);
-		f.getFrame().setVisible(true);
+		final JInternalFrame frame = f.getFrame();
+		this.desktopPane.add(frame);		
+		frame.setDefaultCloseOperation(JInternalFrame.DO_NOTHING_ON_CLOSE);
+		frame.addInternalFrameListener(this);
+		frame.setVisible(true);
+		JCheckBoxMenuItem menuItem = new JCheckBoxMenuItem(f.getFile().getName());
+		menuItem.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e)
+			{	
+				try{
+					frame.setSelected(true);
+				}
+				catch(PropertyVetoException ex){}
+			}
+		});
+		this.windowMenuItems.put(frame, menuItem);
+		this.windowButtonGroup.add(menuItem);
+		this.miWindow.add(menuItem);
+		menuItem.setSelected(true);
 	}
 
 	protected boolean saveAndCloseAllIfConfirmed()
@@ -274,6 +318,9 @@ public abstract class FileEditorGui extends JFrame
 		frame.setVisible(false);
 		frame.dispose();
 		disableOptionsIfNothingOpen();
+		JMenuItem mi = this.windowMenuItems.get(frame);
+		this.windowButtonGroup.remove(mi);
+		this.miWindow.remove(mi);
 	}
 	
 	protected boolean saveOrSaveAsFile(FileEditorFile file)
@@ -369,6 +416,10 @@ public abstract class FileEditorGui extends JFrame
 	{
 		enableUndoForAvailability();
 		enableRedoForAvailability();
+		JMenuItem mi = this.windowMenuItems.get(e.getInternalFrame());
+		if(mi!=null){
+			mi.setSelected(true);
+		}
 	}
 
 	public void internalFrameClosed(InternalFrameEvent e)
@@ -470,5 +521,64 @@ public abstract class FileEditorGui extends JFrame
 			frame.moveToFront();
 			count ++;
 		}
+	}
+	
+	protected void tileWindowsVertically()
+	{
+		Rectangle bounds = this.desktopPane.getBounds();
+		int total = this.desktopPane.getAllFrames().length;	
+		int size = bounds.width / total;
+		int lastSize = size + bounds.width % total; 
+		int count = 0;
+		for(JInternalFrame frame : this.desktopPane.getAllFrames())
+		{
+			frame.setBounds(new Rectangle(count*size,0,
+					count==(total-1)?lastSize:size, bounds.height));
+			frame.moveToFront();
+			count++;
+		}
+	}
+	
+	protected void tileWindowsHorizontally()
+	{
+		Rectangle bounds = this.desktopPane.getBounds();
+		int total = this.desktopPane.getAllFrames().length;	
+		int size = bounds.height / total;
+		int lastSize = size + bounds.width % total; 
+		int count = 0;
+		for(JInternalFrame frame : this.desktopPane.getAllFrames())
+		{
+			frame.setBounds(new Rectangle(0,count*size,
+					bounds.width, count==(total-1)?lastSize:size));
+			frame.moveToFront();
+			count++;
+		}
+	}
+	
+	public void fileChanged(FileEditorFile file)
+	{
+		if(file.getFrame()!=null)
+		{
+			if(file.getFile()!=null)
+			{
+				file.getFrame().setTitle(file.getFile().getName());
+				if(this.windowMenuItems.containsKey(file.getFrame())){
+					this.windowMenuItems.get(file.getFrame()).setText(file.getFile().getName());
+				}
+			}
+			else
+			{
+				file.getFrame().setTitle("");
+				if(this.windowMenuItems.containsKey(file.getFrame())){
+					this.windowMenuItems.get(file.getFrame()).setText("");
+				}
+			}			
+		}
+	}
+	
+	public void undoHistoryChanged(FileEditorFile file)
+	{
+		enableUndoForAvailability();
+		enableRedoForAvailability();
 	}
 }
