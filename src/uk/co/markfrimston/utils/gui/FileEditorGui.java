@@ -1,6 +1,7 @@
 package uk.co.markfrimston.utils.gui;
 
 import javax.swing.*;
+import javax.swing.filechooser.*;
 import javax.swing.event.*;
 import java.beans.*;
 import java.awt.geom.*;
@@ -8,9 +9,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 import java.io.*;
-
-// TODO file filters
-// TODO keyboard shortcuts
 
 public abstract class FileEditorGui extends JFrame 
 	implements InternalFrameListener, WindowListener, FileEditorFileListener
@@ -59,7 +57,10 @@ public abstract class FileEditorGui extends JFrame
 	protected void setupMenu(JMenuBar menuBar)
 	{
 		miFile = new JMenu("File");
+		miFile.setMnemonic('F');		
 		miFileNew = new JMenuItem("New");
+		miFileNew.setMnemonic('N');
+		miFileNew.setAccelerator(ctlKeystroke(KeyEvent.VK_N));
 		miFileNew.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
 			{
@@ -68,6 +69,8 @@ public abstract class FileEditorGui extends JFrame
 		});
 		miFile.add(miFileNew);
 		miFileOpen = new JMenuItem("Open");
+		miFileOpen.setMnemonic('O');
+		miFileOpen.setAccelerator(ctlKeystroke(KeyEvent.VK_O));
 		miFileOpen.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
 			{
@@ -76,6 +79,7 @@ public abstract class FileEditorGui extends JFrame
 		});
 		miFile.add(miFileOpen);
 		miFileClose = new JMenuItem("Close");
+		miFileClose.setMnemonic('C');
 		miFileClose.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
 			{
@@ -96,6 +100,8 @@ public abstract class FileEditorGui extends JFrame
 		miFile.add(miFileCloseAll);
 		miFile.add(new JSeparator());
 		miFileSave = new JMenuItem("Save");
+		miFileSave.setMnemonic('S');
+		miFileSave.setAccelerator(ctlKeystroke(KeyEvent.VK_S));
 		miFileSave.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
 			{
@@ -107,6 +113,7 @@ public abstract class FileEditorGui extends JFrame
 		});
 		miFile.add(miFileSave);
 		miFileSaveAs = new JMenuItem("Save As");
+		miFileSaveAs.setMnemonic('A');
 		miFileSaveAs.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
 			{
@@ -118,6 +125,7 @@ public abstract class FileEditorGui extends JFrame
 		});
 		miFile.add(miFileSaveAs);
 		miFileExit = new JMenuItem("Exit");
+		miFileExit.setMnemonic('x');
 		miFileExit.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
 			{
@@ -128,7 +136,10 @@ public abstract class FileEditorGui extends JFrame
 		menuBar.add(miFile);
 		
 		miEdit = new JMenu("Edit");
+		miEdit.setMnemonic('E');
 		miEditUndo = new JMenuItem("Undo");
+		miEditUndo.setMnemonic('U');
+		miEditUndo.setAccelerator(ctlKeystroke(KeyEvent.VK_Z));
 		miEditUndo.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
 			{
@@ -140,6 +151,8 @@ public abstract class FileEditorGui extends JFrame
 		});
 		miEdit.add(miEditUndo);
 		miEditRedo = new JMenuItem("Redo");
+		miEditRedo.setMnemonic('R');
+		miEditRedo.setAccelerator(ctlKeystroke(KeyEvent.VK_Y));
 		miEditRedo.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
 			{
@@ -153,8 +166,10 @@ public abstract class FileEditorGui extends JFrame
 		menuBar.add(miEdit);
 		
 		miWindow = new JMenu("Window");
+		miWindow.setMnemonic('W');
 		windowButtonGroup = new ButtonGroup();
 		miWindowCascade = new JMenuItem("Cascade");
+		miWindowCascade.setMnemonic('C');
 		miWindowCascade.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
 			{
@@ -162,15 +177,8 @@ public abstract class FileEditorGui extends JFrame
 			}
 		});
 		miWindow.add(miWindowCascade);
-		miWindowTileHoriz = new JMenuItem("Tile Horizontally");
-		miWindowTileHoriz.addActionListener(new ActionListener(){
-			public void actionPerformed(ActionEvent e)
-			{
-				tileWindowsHorizontally();
-			}
-		});
-		miWindow.add(miWindowTileHoriz);
-		miWindowTileVert = new JMenuItem("Tile Vertically");
+		miWindowTileVert = new JMenuItem("Tile Vertical");
+		miWindowTileVert.setMnemonic('T');
 		miWindowTileVert.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
 			{
@@ -178,6 +186,15 @@ public abstract class FileEditorGui extends JFrame
 			}
 		});
 		miWindow.add(miWindowTileVert);
+		miWindowTileHoriz = new JMenuItem("Tile Horizontal");
+		miWindowTileHoriz.setMnemonic('i');
+		miWindowTileHoriz.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e)
+			{
+				tileWindowsHorizontally();
+			}
+		});
+		miWindow.add(miWindowTileHoriz);		
 		miWindow.add(new JSeparator());
 		menuBar.add(miWindow);
 	}
@@ -192,6 +209,12 @@ public abstract class FileEditorGui extends JFrame
 	{
 		JInternalFrame currentFrame = this.desktopPane.getSelectedFrame();
 		return files.get(currentFrame);
+	}
+	
+	protected KeyStroke ctlKeystroke(int withKeyCode)
+	{
+		return KeyStroke.getKeyStroke(withKeyCode,
+			    Toolkit.getDefaultToolkit().getMenuShortcutKeyMask(), false);
 	}
 	
 	protected void createNewFileAndSetupGui()
@@ -351,6 +374,10 @@ public abstract class FileEditorGui extends JFrame
 	{
 		JFileChooser jfc = new JFileChooser();
 		jfc.setSelectedFile(file.getFile());
+		for(javax.swing.filechooser.FileFilter filter : file.getSaveFileFilters())
+		{
+			jfc.addChoosableFileFilter(filter);
+		}
 		if(jfc.showSaveDialog(this)==JFileChooser.APPROVE_OPTION)
 		{
 			File selected = jfc.getSelectedFile();
@@ -386,6 +413,10 @@ public abstract class FileEditorGui extends JFrame
 		JFileChooser jfc = new JFileChooser();
 		if(currentDirectory!=null){
 			jfc.setCurrentDirectory(currentDirectory);
+		}
+		for(javax.swing.filechooser.FileFilter filter : getOpenFileFilters())
+		{
+			jfc.addChoosableFileFilter(filter);
 		}
 		if(jfc.showOpenDialog(this)==JFileChooser.APPROVE_OPTION)
 		{
@@ -583,5 +614,10 @@ public abstract class FileEditorGui extends JFrame
 	{
 		enableUndoForAvailability();
 		enableRedoForAvailability();
+	}
+	
+	protected javax.swing.filechooser.FileFilter[] getOpenFileFilters()
+	{
+		return new javax.swing.filechooser.FileFilter[]{};
 	}
 }

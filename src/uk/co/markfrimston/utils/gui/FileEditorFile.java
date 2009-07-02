@@ -97,4 +97,9 @@ public abstract class FileEditorFile
 			listener.undoHistoryChanged(this);
 		}
 	}
+	
+	public javax.swing.filechooser.FileFilter[] getSaveFileFilters()
+	{
+		return new javax.swing.filechooser.FileFilter[]{};
+	}
 }

@@ -2,12 +2,31 @@ package uk.co.markfrimston.utils.gui;
 
 import java.awt.*;
 import java.io.*;
+
 import javax.swing.*;
+import javax.swing.filechooser.FileFilter;
+
 import java.beans.*;
 import java.awt.event.*;
+import uk.co.markfrimston.utils.*;
 
 public class Test extends FileEditorGui 
 {
+	public static class TestFilter extends FileFilter
+	{
+		@Override
+		public boolean accept(File f) 
+		{
+			return f.isDirectory() || FileUtils.getFilenameExtension(f.getName()).equalsIgnoreCase(".tst");			
+		}
+
+		@Override
+		public String getDescription() 
+		{
+			return "Test file";
+		}	
+	}
+	
 	public static class TestFile extends FileEditorFile
 	{
 		protected int number;
@@ -28,6 +47,11 @@ public class Test extends FileEditorGui
 		{
 			number--;
 			this.frame.repaint();
+		}
+		
+		public FileFilter[] getSaveFileFilters()
+		{
+			return new FileFilter[]{ new TestFilter() };
 		}
 	}
 	
@@ -136,6 +160,12 @@ public class Test extends FileEditorGui
 		}
 	}
 	
+	@Override
+	protected FileFilter[] getOpenFileFilters() 
+	{
+		return new FileFilter[]{ new TestFilter() };
+	}
+
 	public static void main(String[] args)
 	{
 		/*try 
