@@ -9,7 +9,6 @@ import java.awt.event.*;
 import java.util.*;
 import java.io.*;
 
-// TODO maximise files when created
 // TODO file filters
 // TODO keyboard shortcuts
 
@@ -217,6 +216,10 @@ public abstract class FileEditorGui extends JFrame
 		frame.setDefaultCloseOperation(JInternalFrame.DO_NOTHING_ON_CLOSE);
 		frame.addInternalFrameListener(this);
 		frame.setVisible(true);
+		try{
+			frame.setMaximum(true);
+		}catch(PropertyVetoException e)
+		{}
 		JCheckBoxMenuItem menuItem = new JCheckBoxMenuItem(f.getFile().getName());
 		menuItem.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e)
