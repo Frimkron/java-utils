@@ -55,4 +55,20 @@ public class UndoStack
 		u.redo();
 		undoStack.push(u);
 	}
+	
+	public String getUndoName()
+	{
+		if(!canUndo()){
+			return "";
+		}
+		return undoStack.peek().getName();
+	}
+	
+	public String getRedoName()
+	{
+		if(!canRedo()){
+			return "";
+		}
+		return redoStack.peek().getName();
+	}
 }

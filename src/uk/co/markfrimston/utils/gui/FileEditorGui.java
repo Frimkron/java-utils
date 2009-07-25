@@ -98,7 +98,6 @@ public abstract class FileEditorGui extends JFrame
 			}
 		});
 		miFile.add(miFileCloseAll);
-		miFile.add(new JSeparator());
 		miFileSave = new JMenuItem("Save");
 		miFileSave.setMnemonic('S');
 		miFileSave.setAccelerator(ctlKeystroke(KeyEvent.VK_S));
@@ -222,8 +221,11 @@ public abstract class FileEditorGui extends JFrame
 		try
 		{
 			FileEditorFile f = createNewFile();
-			setupFileGui(f);
-			setOpenFileOptionsEnabled(true);
+			if(f != null)
+			{
+				setupFileGui(f);
+				setOpenFileOptionsEnabled(true);
+			}
 		}
 		catch(FileEditorFileException e)
 		{
@@ -425,9 +427,16 @@ public abstract class FileEditorGui extends JFrame
 			try
 			{
 				FileEditorFile f = loadFile(selected);
-				setupFileGui(f);
-				setOpenFileOptionsEnabled(true);
-				return true;
+				if(f != null)
+				{
+					setupFileGui(f);
+					setOpenFileOptionsEnabled(true);
+					return true;
+				}
+				else
+				{
+					return false;
+				}
 			}
 			catch(FileEditorFileException e)
 			{
@@ -613,7 +622,9 @@ public abstract class FileEditorGui extends JFrame
 	public void undoHistoryChanged(FileEditorFile file)
 	{
 		enableUndoForAvailability();
+		miEditUndo.setText("Undo "+file.getUndoName());
 		enableRedoForAvailability();
+		miEditRedo.setText("Redo "+file.getRedoName());
 	}
 	
 	protected javax.swing.filechooser.FileFilter[] getOpenFileFilters()

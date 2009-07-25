@@ -3,22 +3,22 @@ package uk.co.markfrimston.utils.gui;
 public class FileEditorFileException extends Exception
 {
 
-	protected FileEditorFileException()
+	public FileEditorFileException()
 	{
 		super();
 	}
 
-	protected FileEditorFileException(String message, Throwable cause)
+	public FileEditorFileException(String message, Throwable cause)
 	{
 		super(message, cause);
 	}
 
-	protected FileEditorFileException(String message)
+	public FileEditorFileException(String message)
 	{
 		super(message);
 	}
 
-	protected FileEditorFileException(Throwable cause)
+	public FileEditorFileException(Throwable cause)
 	{
 		super(cause);
 	}

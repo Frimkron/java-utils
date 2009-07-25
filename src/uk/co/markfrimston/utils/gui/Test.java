@@ -12,6 +12,34 @@ import uk.co.markfrimston.utils.*;
 
 public class Test extends FileEditorGui 
 {
+	public static class TestCommand extends FileEditorCommand 
+	{	
+		public TestCommand(FileEditorFile file) 
+		{
+			super(file);
+		}
+
+		@Override
+		public void execute() 
+		{
+			Test.TestFile f = (Test.TestFile)file;
+			f.incrementNumber();
+			f.setUnsavedChanges(true);
+		}
+
+		@Override
+		public void undo() 
+		{
+			Test.TestFile f = (Test.TestFile)file;
+			f.decrementNumber();
+		}
+
+		public String getName()
+		{
+			return "Increment";
+		}
+	}
+	
 	public static class TestFilter extends FileFilter
 	{
 		@Override
@@ -90,7 +118,7 @@ public class Test extends FileEditorGui
 
 		public void mouseReleased(MouseEvent arg0) 
 		{
-			file.doCommand(new TestCommand(file));
+			file.doCommand(new Test.TestCommand(file));
 		}
 	}
 	

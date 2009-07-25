@@ -98,6 +98,30 @@ public abstract class FileEditorFile
 		}
 	}
 	
+	public String getUndoName()
+	{
+		if(undoAvailable())
+		{
+			return undoHistory.getUndoName();
+		}
+		else
+		{
+			return "";
+		}
+	}
+	
+	public String getRedoName()
+	{
+		if(redoAvailable())
+		{
+			return undoHistory.getRedoName();
+		}
+		else
+		{
+			return "";
+		}
+	}
+	
 	public javax.swing.filechooser.FileFilter[] getSaveFileFilters()
 	{
 		return new javax.swing.filechooser.FileFilter[]{};
